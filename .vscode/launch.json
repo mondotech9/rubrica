@@ -1,0 +1,38 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "App",
+            "request": "launch",
+            "mainClass": "com.rubrica/com.rubrica.App",
+            "projectName": "rubrica"
+        },
+        {
+            "type": "java",
+            "name": "App",
+            "request": "launch",
+            "mainClass": "com.rubrica.App",
+            "classPaths": [
+                "${workspaceFolder}/target/classes"
+            ],
+            "modulePaths": [],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "preLaunchTask": "Compila Rubrica"
+        },
+        {
+            "type": "java",
+            "name": "Avvia Rubrica",
+            "request": "launch",
+            "mainClass": "com.rubrica.App",
+            "classPaths": [
+                "${workspaceFolder}/target/classes"
+            ],
+            "modulePaths": [],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "preLaunchTask": "Compila Rubrica"
+        }
+    ]
+}
