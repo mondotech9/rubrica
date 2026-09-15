@@ -1,5 +1,7 @@
+com/rubrica/FinestraLogin.class
 module-info.class
 com/rubrica/ArchivioPersone.class
+com/rubrica/Utente.class
 com/rubrica/Persona.class
 com/rubrica/FinestraRubrica.class
 com/rubrica/App.class

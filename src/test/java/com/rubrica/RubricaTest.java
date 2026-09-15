@@ -10,7 +10,7 @@ import java.nio.file.Path;
 public class RubricaTest {
     public static void main(String[] args) throws Exception {
         Path cartella = Files.createTempDirectory("rubrica-test-");
-        File file = cartella.resolve("informazioni.txt").toFile();
+        File file = cartella.resolve("informazioni").toFile();
         try {
             Rubrica rubrica = apri(file);
             verifica(rubrica.size() == 0, "Avvio senza file");
@@ -36,9 +36,11 @@ public class RubricaTest {
             rubrica = apri(file);
             verificaPersona(rubrica.getPersona(0), steve);
             verificaPersona(rubrica.getPersona(1), modificata);
-            String testo = Files.readString(file.toPath(), StandardCharsets.UTF_8);
-            verifica(testo.equals("Steve;Jobs;via Cupertino 13;0612344;56" + System.lineSeparator()
-                    + "Nicolò;Natale;via Città 2;+39 000111;100" + System.lineSeparator()), "Codifica esatta del file");
+            String primo = Files.readString(new File(file, "Persona1.txt").toPath(), StandardCharsets.UTF_8);
+            String secondo = Files.readString(new File(file, "Persona2.txt").toPath(), StandardCharsets.UTF_8);
+            verifica(primo.equals("Steve;Jobs;via Cupertino 13;0612344;56" + System.lineSeparator()), "Primo file");
+            verifica(secondo.equals("Nicolò;Natale;via Città 2;+39 000111;100" + System.lineSeparator()), "Secondo file");
+            verifica(!new File(file, "Persona3.txt").exists(), "File in eccesso eliminato");
 
             rubrica.elimina(1);
             rubrica.elimina(0);
@@ -57,16 +59,57 @@ public class RubricaTest {
             } catch (IllegalArgumentException previsto) {
                 // Un'età deve essere non negativa.
             }
-            Files.writeString(file.toPath(), "riga;non;valida", StandardCharsets.UTF_8);
+            Path fileErrato = new File(file, "Persona1.txt").toPath();
+            Files.writeString(fileErrato, "riga;non;valida", StandardCharsets.UTF_8);
             try {
                 apri(file);
                 throw new AssertionError("File non valido non segnalato");
             } catch (IOException previsto) {
-                verifica(Files.readString(file.toPath()).equals("riga;non;valida"), "File errato non sovrascritto");
+                verifica(Files.readString(fileErrato).equals("riga;non;valida"), "File errato non sovrascritto");
             }
-            System.out.println("OK: inserimento, modifica, eliminazione, tabella, persistenza e validazione.");
+            // Ripristina il file per verificare omonimi e ordinamento oltre Persona9.
+            Files.writeString(fileErrato, "Mario;Rossi;via Roma;000;20" + System.lineSeparator());
+            rubrica = apri(file);
+            for (int i = 1; i < 12; i++) {
+                rubrica.aggiungi(new Persona("Mario", "Rossi", "via Roma", "00" + i, 20 + i));
+            }
+            rubrica = apri(file);
+            verifica(rubrica.size() == 12, "Omonimi in file separati");
+            for (int i = 0; i < 12; i++) {
+                verifica(rubrica.getPersona(i).getEta() == 20 + i, "Ordine numerico dei file");
+            }
+            Path nota = new File(file, "note.txt").toPath();
+            Files.writeString(nota, "Da conservare");
+            while (rubrica.size() > 0) rubrica.elimina(0);
+            verifica(apri(file).size() == 0, "Tutti i file persona eliminati");
+            verifica(Files.readString(nota).equals("Da conservare"), "File estranei conservati");
+            Files.delete(nota);
+            Files.delete(file.toPath());
+
+            Path precedente = cartella.resolve("informazioni.txt");
+            Files.writeString(precedente, "Steve;Jobs;via Cupertino 13;0612344;56" + System.lineSeparator());
+            rubrica = apri(file);
+            verificaPersona(rubrica.getPersona(0), steve);
+            rubrica.aggiungi(new Persona("Mario", "Rossi", "", "001", 25));
+            verifica(apri(file).size() == 2, "Passaggio dal vecchio file alla cartella");
+            verifica(Files.exists(precedente), "Vecchio file conservato");
+            rubrica.elimina(1);
+            rubrica.elimina(0);
+            verifica(apri(file).size() == 0, "Non reimporta vecchi contatti dopo eliminazione");
+            Files.delete(precedente);
+
+            Utente utente = new Utente("admin", "admin");
+            verifica(utente.verificaCredenziali("admin", "admin"), "Login corretto");
+            verifica(!utente.verificaCredenziali("admin", "errata"), "Password errata");
+            verifica(!utente.verificaCredenziali("altro", "admin"), "Username errato");
+            verifica(!utente.verificaCredenziali("", ""), "Credenziali vuote");
+            System.out.println("OK: contatti, file separati, omonimi, ordine, eliminazione, compatibilità e login.");
         } finally {
+            if (file.isDirectory()) {
+                for (File contatto : file.listFiles()) Files.deleteIfExists(contatto.toPath());
+            }
             Files.deleteIfExists(file.toPath());
+            Files.deleteIfExists(cartella.resolve("informazioni.txt"));
             Files.deleteIfExists(cartella);
         }
     }
